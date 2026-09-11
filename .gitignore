@@ -1,0 +1,21 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Pesos del modelo: ultralytics los descarga en la primera ejecución
+*.pt
+*.onnx
+*.engine
+
+# Salidas de ultralytics
+runs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# macOS
+.DS_Store
