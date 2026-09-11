@@ -1,13 +1,13 @@
 """
-YOLO en local con tu webcam.
-Todo corre en tu Mac, sin EC2.
+YOLO running locally against your webcam.
+Everything runs on your own machine, no remote server involved.
 
-Uso:
+Usage:
     python webcam_local.py
     python webcam_local.py --model yolov8n.pt
     python webcam_local.py --camera 1
 
-Requisitos:
+Requirements:
     pip install ultralytics opencv-python
 """
 
@@ -19,8 +19,8 @@ from ultralytics import YOLO
 
 def main():
     parser = argparse.ArgumentParser(description="YOLO local webcam inference")
-    parser.add_argument("--model", default="yolov8n.pt", help="Modelo YOLO (default: yolov8n.pt)")
-    parser.add_argument("--camera", type=int, default=0, help="Índice de la cámara (default: 0)")
+    parser.add_argument("--model", default="yolov8n.pt", help="YOLO model (default: yolov8n.pt)")
+    parser.add_argument("--camera", type=int, default=0, help="Camera index (default: 0)")
     parser.add_argument("--conf", type=float, default=0.5, help="Confidence threshold (default: 0.5)")
     args = parser.parse_args()
 
@@ -28,11 +28,11 @@ def main():
     cap = cv2.VideoCapture(args.camera)
 
     if not cap.isOpened():
-        print("Error: No se pudo abrir la cámara")
+        print("Error: could not open the camera")
         return
 
-    print(f"Modelo: {args.model}")
-    print("Pulsa 'q' para salir")
+    print(f"Model: {args.model}")
+    print("Press 'q' to quit")
 
     fps_counter = 0
     fps_start = time.time()

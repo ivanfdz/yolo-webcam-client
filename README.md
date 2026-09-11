@@ -1,19 +1,19 @@
 # yolo-webcam-client
 
-Detección de objetos en tiempo real sobre la webcam con YOLOv8, en dos modos: todo en local, o
-enviando los frames a un servidor remoto (una EC2 con GPU, por ejemplo) que hace la inferencia y
-devuelve la imagen ya anotada.
+Real-time object detection on your webcam with YOLOv8, in two modes: everything local, or
+streaming frames to a remote server (a GPU EC2 instance, for example) that runs inference and
+returns the annotated image.
 
-Son dos scripts independientes, sin dependencias entre ellos:
+These are two independent scripts with no dependency on each other:
 
-| Script | Dónde corre la inferencia | Para qué sirve |
+| Script | Where inference runs | What it's for |
 | --- | --- | --- |
-| `webcam_local.py` | en tu máquina | probar YOLO sin infra: carga el modelo, lee la cámara y pinta las cajas |
-| `webcam_client.py` | en un servidor remoto | tu máquina solo captura y muestra; el modelo vive en el servidor |
+| `webcam_local.py` | on your machine | trying YOLO with no infrastructure: loads the model, reads the camera, draws the boxes |
+| `webcam_client.py` | on a remote server | your machine only captures and displays; the model lives on the server |
 
-En los dos casos la ventana muestra los FPS reales medidos, y se cierra con `q`.
+In both cases the window shows the measured FPS, and `q` closes it.
 
-## Instalación
+## Install
 
 ```bash
 python3 -m venv .venv
@@ -21,60 +21,60 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-`webcam_local.py` necesita `ultralytics` (que arrastra PyTorch, ~2 GB). Si solo vas a usar el
-modo remoto, te basta con `opencv-python`, `requests` y `numpy`.
+`webcam_local.py` needs `ultralytics`, which pulls in PyTorch (~2 GB). If you only plan to use
+remote mode, `opencv-python`, `requests` and `numpy` are enough.
 
-En macOS, la primera ejecución pide permiso de cámara para el terminal desde el que lanzas el
-script. Si no aparece el diálogo, actívalo a mano en Ajustes del Sistema → Privacidad y
-seguridad → Cámara.
+On macOS, the first run asks for camera permission for the terminal you launch the script from.
+If the dialog never appears, enable it manually under System Settings → Privacy & Security →
+Camera.
 
-## Modo local
+## Local mode
 
 ```bash
 python webcam_local.py
 python webcam_local.py --model yolov8s.pt --camera 1 --conf 0.35
 ```
 
-| Flag | Default | Qué hace |
+| Flag | Default | What it does |
 | --- | --- | --- |
-| `--model` | `yolov8n.pt` | pesos a cargar. Si el fichero no existe, `ultralytics` lo descarga solo |
-| `--camera` | `0` | índice del dispositivo de captura |
-| `--conf` | `0.5` | umbral de confianza; por debajo, la detección se descarta |
+| `--model` | `yolov8n.pt` | weights to load. If the file is missing, `ultralytics` downloads it |
+| `--camera` | `0` | capture device index |
+| `--conf` | `0.5` | confidence threshold; detections below it are discarded |
 
-`yolov8n` es el más pequeño de la familia (nano) y es el que da FPS decentes en CPU. Si tienes
-GPU disponible, `yolov8s`/`yolov8m` mejoran la precisión a costa de velocidad.
+`yolov8n` is the smallest of the family (nano) and the one that gives usable FPS on CPU. With a
+GPU available, `yolov8s`/`yolov8m` trade speed for accuracy.
 
-## Modo remoto
+## Remote mode
 
 ```bash
-python webcam_client.py --url http://<ip-del-servidor>:5000/process
+python webcam_client.py --url http://<server-ip>:5000/process
 python webcam_client.py --url http://1.2.3.4:5000/process --quality 60 --width 1280 --height 720
 ```
 
-| Flag | Default | Qué hace |
+| Flag | Default | What it does |
 | --- | --- | --- |
-| `--url` | *obligatorio* | endpoint del servidor de inferencia |
-| `--camera` | `0` | índice del dispositivo de captura |
-| `--quality` | `80` | calidad JPEG del frame que se envía (1-100) |
-| `--width` / `--height` | `640` / `480` | resolución que se pide a la cámara |
+| `--url` | *required* | inference server endpoint |
+| `--camera` | `0` | capture device index |
+| `--quality` | `80` | JPEG quality of the frame sent (1-100) |
+| `--width` / `--height` | `640` / `480` | resolution requested from the camera |
 
-El bucle es: capturar frame → codificar a JPEG → `POST` al servidor → decodificar la respuesta →
-mostrar. Bajar `--quality` y la resolución es la palanca directa para reducir latencia, porque
-lo que domina el tiempo por frame es el tamaño del cuerpo de la petición.
+The loop is: capture frame → encode as JPEG → `POST` to the server → decode the response →
+display. Lowering `--quality` and the resolution is the direct lever for reducing latency,
+because request body size is what dominates per-frame time.
 
-Los errores de red no matan el proceso: ante `ConnectionError` pinta "SIN CONEXION" sobre el
-frame crudo y sigue reintentando; ante timeout (10 s) muestra el frame sin anotar y continúa.
+Network errors don't kill the process: on `ConnectionError` it draws "NO CONNECTION" over the raw
+frame and keeps retrying; on timeout (10 s) it shows the unannotated frame and carries on.
 
-### Contrato con el servidor
+### Server contract
 
-El servidor no está en este repo. El cliente espera algo muy simple:
+The server is not in this repo. The client expects something very simple:
 
-- `POST` al `--url` con `Content-Type: application/octet-stream`
-- cuerpo: los bytes de un JPEG
-- respuesta `200` con los bytes de un JPEG ya anotado
-- cualquier otro código se registra en consola y el cliente muestra el frame original
+- `POST` to `--url` with `Content-Type: application/octet-stream`
+- body: the bytes of a JPEG
+- `200` response with the bytes of an annotated JPEG
+- any other status code is logged to the console and the client shows the original frame
 
-Un servidor mínimo compatible, con Flask y ultralytics:
+A minimal compatible server, using Flask and ultralytics:
 
 ```python
 from flask import Flask, request, Response
@@ -94,20 +94,19 @@ def process():
 app.run(host="0.0.0.0", port=5000)
 ```
 
-### Nota de seguridad
+### Security note
 
-El protocolo va en HTTP plano y sin autenticación. Vale para una prueba en una red de confianza,
-pero si expones ese puerto a internet estás publicando un endpoint anónimo que consume tu GPU y
-por el que viaja el vídeo de tu cámara en claro. Para cualquier uso real: túnel SSH o VPN al
-servidor, o TLS más un token en la petición, y el grupo de seguridad restringido a tu IP.
+The protocol is plain HTTP with no authentication. Fine for a test on a trusted network, but
+exposing that port to the internet means publishing an anonymous endpoint that burns your GPU
+and carries your camera feed in the clear. For anything real: SSH tunnel or VPN to the server,
+or TLS plus a token in the request, and the security group restricted to your IP.
 
-## Ficheros
+## Files
 
 ```
-webcam_local.py    inferencia en local con ultralytics
-webcam_client.py   captura + display; la inferencia la hace el servidor remoto
-requirements.txt   dependencias
+webcam_local.py    local inference with ultralytics
+webcam_client.py   capture + display; a remote server does the inference
+requirements.txt   dependencies
 ```
 
-Los pesos (`*.pt`) están fuera del control de versiones: `ultralytics` los descarga en la
-primera ejecución.
+Weights (`*.pt`) are kept out of version control: `ultralytics` downloads them on first run.

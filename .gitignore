@@ -1,14 +1,14 @@
-# Entornos virtuales
+# Virtual environments
 .venv/
 venv/
 env/
 
-# Pesos del modelo: ultralytics los descarga en la primera ejecución
+# Model weights: ultralytics downloads them on first run
 *.pt
 *.onnx
 *.engine
 
-# Salidas de ultralytics
+# ultralytics output
 runs/
 
 # Python
